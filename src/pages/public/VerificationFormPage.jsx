@@ -670,6 +670,10 @@ function VerificationFormPage() {
   }
 
   function handleNext() {
+    if (submitting) {
+      return;
+    }
+
     if (!validateCurrentStep()) {
       Notification.error("Please complete the highlighted field.");
       return;
@@ -683,6 +687,10 @@ function VerificationFormPage() {
   }
 
   function handleBack() {
+    if (submitting) {
+      return;
+    }
+
     if (currentStep === 0) {
       navigate("/");
       return;
@@ -696,6 +704,10 @@ function VerificationFormPage() {
   }
 
   function handleClose() {
+    if (submitting) {
+      return;
+    }
+
     navigate("/");
   }
 
@@ -904,6 +916,10 @@ function VerificationFormPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (submitting) {
+      return;
+    }
+
     const allErrors = validateAll();
     setErrors(allErrors);
 
@@ -965,11 +981,13 @@ function VerificationFormPage() {
       <button
         type="button"
         onClick={onClick}
+        disabled={submitting}
         className={[
           "flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition sm:gap-4 sm:rounded-2xl sm:px-4 sm:py-4",
           selected
             ? "border-accent-1 bg-accent-1/15 text-text ring-2 ring-accent-1/25"
             : "border-border bg-card text-text/70 hover:border-accent-1 hover:bg-card",
+          submitting ? "cursor-not-allowed opacity-70" : "",
         ].join(" ")}
       >
         <span className="text-sm font-semibold leading-5 sm:text-base sm:leading-6">{label}</span>
@@ -992,11 +1010,13 @@ function VerificationFormPage() {
       <button
         type="button"
         onClick={onClick}
+        disabled={submitting}
         className={[
           "mt-4 flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition sm:mt-5 sm:gap-4 sm:rounded-2xl sm:px-4 sm:py-4",
           selected
             ? "border-accent-1 bg-accent-1/15 text-text ring-2 ring-accent-1/25"
             : "border-border bg-card text-text hover:border-accent-1",
+          submitting ? "cursor-not-allowed opacity-70" : "",
         ].join(" ")}
       >
         <span className="text-sm font-semibold sm:text-base">{label}</span>
@@ -1290,6 +1310,71 @@ function VerificationFormPage() {
     );
   }
 
+  function renderSubmittingOverlay() {
+    if (!submitting) {
+      return null;
+    }
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 px-4 backdrop-blur-sm">
+        <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card p-6 text-center shadow-2xl shadow-accent-2/10">
+          <div className="absolute -left-12 -top-12 size-32 rounded-full bg-accent-1/20 blur-2xl" />
+          <div className="absolute -bottom-12 -right-12 size-32 rounded-full bg-accent-2/20 blur-2xl" />
+
+          <div className="relative mx-auto mb-6 flex size-24 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-border" />
+            <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-accent-1 border-r-accent-2" />
+
+            <div className="flex size-16 items-center justify-center rounded-2xl border border-border bg-background shadow-lg">
+              <Icon icon="solar:shield-check-bold" className="size-8 text-accent-2" />
+            </div>
+          </div>
+
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-accent-2">Secure submission</p>
+
+            <Heading as="h2" className="mt-3 text-2xl">
+              Sending your verification
+            </Heading>
+
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-text/60">
+              Please keep this page open while we securely upload your details and documents.
+            </p>
+
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-border bg-background p-3">
+                <div className="mx-auto flex size-9 items-center justify-center rounded-xl bg-accent-1/15 text-accent-2">
+                  <Icon icon="solar:document-text-bold" className="size-5" />
+                </div>
+                <p className="mt-2 text-[11px] font-semibold text-text/60">Details</p>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-background p-3">
+                <div className="mx-auto flex size-9 items-center justify-center rounded-xl bg-accent-1/15 text-accent-2">
+                  <Icon icon="solar:folder-with-files-bold" className="size-5" />
+                </div>
+                <p className="mt-2 text-[11px] font-semibold text-text/60">Documents</p>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-background p-3">
+                <div className="mx-auto flex size-9 items-center justify-center rounded-xl bg-accent-1/15 text-accent-2">
+                  <Icon icon="solar:lock-keyhole-bold" className="size-5" />
+                </div>
+                <p className="mt-2 text-[11px] font-semibold text-text/60">Secure</p>
+              </div>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-full bg-border">
+              <div className="h-2 w-2/3 animate-pulse rounded-full bg-accent-1" />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold text-text/50">This may take a few seconds.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderCurrentContent() {
     if (activeStep.type === "agreements") {
       return renderAgreements();
@@ -1326,7 +1411,11 @@ function VerificationFormPage() {
             <button
               type="button"
               onClick={handleBack}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-card text-text transition hover:bg-border sm:size-10"
+              disabled={submitting}
+              className={[
+                "flex size-9 shrink-0 items-center justify-center rounded-full bg-card text-text transition hover:bg-border sm:size-10",
+                submitting ? "cursor-not-allowed opacity-60" : "",
+              ].join(" ")}
               aria-label="Go back"
             >
               <Icon icon="solar:alt-arrow-left-linear" className="size-5 sm:size-6" />
@@ -1341,7 +1430,11 @@ function VerificationFormPage() {
             <button
               type="button"
               onClick={handleClose}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-card text-text transition hover:bg-border sm:size-10"
+              disabled={submitting}
+              className={[
+                "flex size-9 shrink-0 items-center justify-center rounded-full bg-card text-text transition hover:bg-border sm:size-10",
+                submitting ? "cursor-not-allowed opacity-60" : "",
+              ].join(" ")}
               aria-label="Close verification form"
             >
               <Icon icon="solar:close-circle-linear" className="size-5 sm:size-6" />
@@ -1351,7 +1444,13 @@ function VerificationFormPage() {
           <div className="mx-auto max-w-3xl pb-3 pt-2 sm:pb-4 sm:pt-3">{renderProgressBar()}</div>
         </header>
 
-        <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-10">
+        <main
+          ref={contentRef}
+          className={[
+            "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 transition sm:px-6 sm:py-10",
+            submitting ? "pointer-events-none opacity-40 blur-[1px]" : "",
+          ].join(" ")}
+        >
           <div className="mx-auto w-full max-w-3xl pb-6">{renderCurrentContent()}</div>
         </main>
 
@@ -1364,7 +1463,7 @@ function VerificationFormPage() {
                 disabled={submitting}
                 className="w-full"
               >
-                {submitting ? "Submitting..." : "Submit Verification"}
+                {submitting ? "Securely Submitting..." : "Submit Verification"}
               </Button>
             ) : (
               <Button
@@ -1372,6 +1471,7 @@ function VerificationFormPage() {
                 icon="solar:arrow-right-linear"
                 iconPosition="right"
                 onClick={handleNext}
+                disabled={submitting}
                 className="w-full"
               >
                 Next
@@ -1379,6 +1479,8 @@ function VerificationFormPage() {
             )}
           </div>
         </footer>
+
+        {renderSubmittingOverlay()}
       </form>
     </section>
   );

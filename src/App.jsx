@@ -6,7 +6,6 @@ import "react-toastify/dist/ReactToastify.css";
 import PrivateRoute from "@/components/PrivateRoute";
 import PublicRoute from "@/components/PublicRoute";
 
-import PublicLayout from "@/layouts/PublicLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 
 import utilities from "@/lib/utilities";
@@ -32,11 +31,9 @@ function AppRoutes() {
   return (
     <>
       <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<VerificationLandingPage />} />
-          <Route path="/success" element={<VerificationSuccessPage />} />
-        </Route>
+        <Route path="/" element={<VerificationLandingPage />} />
         <Route path="/verification" element={<VerificationFormPage />} />
+        <Route path="/success" element={<VerificationSuccessPage />} />
 
         <Route
           path="/admin/login"

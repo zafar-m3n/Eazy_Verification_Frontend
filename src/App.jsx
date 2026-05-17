@@ -34,9 +34,9 @@ function AppRoutes() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<VerificationLandingPage />} />
-          <Route path="/verification" element={<VerificationFormPage />} />
           <Route path="/success" element={<VerificationSuccessPage />} />
         </Route>
+        <Route path="/verification" element={<VerificationFormPage />} />
 
         <Route
           path="/admin/login"

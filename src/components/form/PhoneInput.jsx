@@ -7,8 +7,8 @@ function PhoneInput({
   error = "",
   className = "",
   label,
-  defaultCountry = "LK",
-  placeholder = "77 123 4567",
+  defaultCountry = "gb",
+  placeholder = "7400 123456",
   ...rest
 }) {
   const containerClassName = [
@@ -31,6 +31,13 @@ function PhoneInput({
         placeholder={placeholder}
         className={containerClassName}
         inputClassName="react-international-phone-input"
+        countrySelectorStyleProps={{
+          buttonClassName: "react-international-phone-country-selector-button",
+          dropdownStyleProps: {
+            className: "react-international-phone-country-selector-dropdown",
+            listClassName: "react-international-phone-country-selector-dropdown__list",
+          },
+        }}
         {...rest}
       />
 

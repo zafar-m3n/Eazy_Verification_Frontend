@@ -27,6 +27,7 @@
     "react-international-phone": "^4.8.0",
     "react-router-dom": "^7.15.1",
     "react-select": "^5.10.2",
+    "react-select-country-list": "^2.2.3",
     "react-toastify": "^11.1.0",
     "swiper": "^12.1.2",
     "tailwind-merge": "^3.5.0",

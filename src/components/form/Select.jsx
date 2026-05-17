@@ -19,7 +19,7 @@ function Select({
 
   return (
     <div className="w-full">
-      {label && <label className="mb-2 block text-sm font-medium text-text">{label}</label>}
+      {label && <label className="mb-2 block text-sm font-medium text-text font-figtree">{label}</label>}
 
       <SelectLib
         unstyled
@@ -34,14 +34,14 @@ function Select({
         classNames={{
           control: ({ isFocused }) =>
             [
-              "min-h-12 rounded-xl border bg-card px-3 py-1 text-sm text-text transition",
-              "hover:border-accent-1",
+              "h-12 rounded-xl border bg-card px-3 text-sm text-text transition",
+              "hover:border-accent-1 font-figtree",
               isFocused ? "border-accent-1 ring-2 ring-accent-1/20" : "border-border",
               error ? "border-accent-2 ring-2 ring-accent-2/15" : "",
               isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
             ].join(" "),
 
-          valueContainer: () => "py-1",
+          valueContainer: () => "h-full py-0",
 
           singleValue: () => "text-sm font-medium text-text",
 
@@ -51,7 +51,7 @@ function Select({
 
           menuPortal: () => "z-[9999]",
 
-          menu: () => "z-[9999] mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-lg",
+          menu: () => "z-[9999] mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-lg font-figtree",
 
           menuList: () => "app-scrollbar max-h-64 overflow-y-auto p-1",
 
@@ -61,7 +61,7 @@ function Select({
               isSelected ? "bg-accent-1 text-card" : isFocused ? "bg-background text-text" : "bg-card text-text",
             ].join(" "),
 
-          indicatorsContainer: () => "gap-1 text-text/60",
+          indicatorsContainer: () => "h-full gap-1 text-text/60",
 
           dropdownIndicator: ({ isFocused }) =>
             ["px-1 transition", isFocused ? "text-accent-2" : "text-text/60"].join(" "),

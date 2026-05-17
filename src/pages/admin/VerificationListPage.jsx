@@ -1,111 +1,132 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 
 import API from "@/services";
-import Badge from "@/components/ui/Badge";
+import VerificationDetailsModal from "@/components/VerificationDetailsModal";
 import Button from "@/components/ui/Button";
-import Heading from "@/components/ui/Heading";
 import Icon from "@/components/ui/Icon";
 import Notification from "@/components/ui/Notification";
 import Pagination from "@/components/ui/Pagination";
-import Select from "@/components/form/Select";
 import Spinner from "@/components/ui/Spinner";
 import Table from "@/components/ui/Table";
+import Select from "@/components/form/Select";
 import TextInput from "@/components/form/TextInput";
 
+const statusOptions = [
+  {
+    label: "All Statuses",
+    value: "",
+  },
+  {
+    label: "Pending",
+    value: "pending",
+  },
+  {
+    label: "Approved",
+    value: "approved",
+  },
+  {
+    label: "Rejected",
+    value: "rejected",
+  },
+];
+
+const limitOptions = [
+  {
+    label: "10 / page",
+    value: 10,
+  },
+  {
+    label: "25 / page",
+    value: 25,
+  },
+  {
+    label: "50 / page",
+    value: 50,
+  },
+];
+
 function VerificationListPage() {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const initialFilters = {
-    status: searchParams.get("status") || "",
-    search: searchParams.get("search") || "",
-    date_from: searchParams.get("date_from") || "",
-    date_to: searchParams.get("date_to") || "",
-    limit: searchParams.get("limit") || "10",
-  };
-
+  const [loading, setLoading] = useState(true);
   const [submissions, setSubmissions] = useState([]);
   const [pagination, setPagination] = useState({
     total: 0,
-    page: Number(searchParams.get("page") || 1),
-    limit: Number(searchParams.get("limit") || 10),
+    page: 1,
+    limit: 10,
     total_pages: 1,
   });
 
-  const [filters, setFilters] = useState(initialFilters);
-  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
-  const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page") || 1));
-  const [loading, setLoading] = useState(true);
-  const [filtersVisible, setFiltersVisible] = useState(true);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "",
+    date_from: "",
+    date_to: "",
+  });
 
-  const statusOptions = [
-    { label: "All statuses", value: "" },
-    { label: "Pending", value: "pending" },
-    { label: "Approved", value: "approved" },
-    { label: "Rejected", value: "rejected" },
-  ];
+  const [activeFilters, setActiveFilters] = useState({
+    search: "",
+    status: "",
+    date_from: "",
+    date_to: "",
+  });
 
-  const limitOptions = [
-    { label: "10 per page", value: "10" },
-    { label: "25 per page", value: "25" },
-    { label: "50 per page", value: "50" },
-    { label: "100 per page", value: "100" },
-  ];
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  const columns = [
-    {
-      key: "customer",
-      label: "Customer",
-    },
-    {
-      key: "email",
-      label: "Email",
-    },
-    {
-      key: "phone",
-      label: "Phone",
-    },
-    {
-      key: "country",
-      label: "Country",
-    },
-    {
-      key: "submitted_at",
-      label: "Submitted",
-    },
-    {
-      key: "status",
-      label: "Status",
-    },
-    {
-      key: "action",
-      label: "Action",
-    },
-  ];
+  const columns = useMemo(
+    () => [
+      {
+        key: "customer",
+        label: "Customer",
+      },
+      {
+        key: "contact",
+        label: "Contact",
+      },
+      {
+        key: "submitted_at",
+        label: "Submitted",
+      },
+      {
+        key: "reviewed_at",
+        label: "Reviewed",
+      },
+      {
+        key: "status",
+        label: "Status",
+      },
+      {
+        key: "actions",
+        label: "",
+      },
+    ],
+    [],
+  );
 
-  async function fetchVerificationSubmissions() {
+  useEffect(() => {
+    fetchSubmissions({
+      page: pagination.page,
+      limit: pagination.limit,
+      ...activeFilters,
+    });
+  }, [pagination.page, pagination.limit, activeFilters]);
+
+  async function fetchSubmissions(params = {}) {
     try {
       setLoading(true);
 
-      const params = buildRequestParams();
-      updateUrlParams(params);
-
-      const response = await API.private.getVerificationSubmissions(params);
+      const cleanParams = buildCleanParams(params);
+      const response = await API.private.getVerificationSubmissions(cleanParams);
 
       if (response?.data?.code === "OK") {
-        const responseData = response.data.data;
-
-        setSubmissions(responseData?.submissions || []);
-        setPagination({
-          total: responseData?.pagination?.total || 0,
-          page: responseData?.pagination?.page || 1,
-          limit: responseData?.pagination?.limit || Number(appliedFilters.limit || 10),
-          total_pages: responseData?.pagination?.total_pages || 1,
-        });
-      } else {
-        Notification.error("Failed to load verification submissions.");
+        setSubmissions(response.data.data?.submissions || []);
+        setPagination((currentPagination) => ({
+          ...currentPagination,
+          ...(response.data.data?.pagination || {}),
+        }));
+        return;
       }
+
+      Notification.error("Failed to load verification submissions.");
     } catch (error) {
       const errorMessage = error?.response?.data?.error || "Failed to load verification submissions.";
       Notification.error(errorMessage);
@@ -114,45 +135,14 @@ function VerificationListPage() {
     }
   }
 
-  useEffect(() => {
-    fetchVerificationSubmissions();
-  }, [currentPage, appliedFilters]);
-
-  function buildRequestParams() {
-    const params = {
-      page: currentPage,
-      limit: appliedFilters.limit || "10",
-    };
-
-    if (appliedFilters.status) {
-      params.status = appliedFilters.status;
-    }
-
-    if (appliedFilters.search.trim()) {
-      params.search = appliedFilters.search.trim();
-    }
-
-    if (appliedFilters.date_from.trim()) {
-      params.date_from = appliedFilters.date_from.trim();
-    }
-
-    if (appliedFilters.date_to.trim()) {
-      params.date_to = appliedFilters.date_to.trim();
-    }
-
-    return params;
-  }
-
-  function updateUrlParams(params) {
-    const nextSearchParams = {};
-
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== "" && value !== null && value !== undefined) {
-        nextSearchParams[key] = String(value);
+  function buildCleanParams(params) {
+    return Object.entries(params).reduce((cleanParams, [key, value]) => {
+      if (value !== "" && value !== null && typeof value !== "undefined") {
+        cleanParams[key] = value;
       }
-    });
 
-    setSearchParams(nextSearchParams, { replace: true });
+      return cleanParams;
+    }, {});
   }
 
   function handleFilterChange(name, value) {
@@ -165,273 +155,295 @@ function VerificationListPage() {
   function handleApplyFilters(event) {
     event.preventDefault();
 
-    setCurrentPage(1);
-    setAppliedFilters({
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
+
+    setActiveFilters({
+      search: filters.search.trim(),
       status: filters.status,
-      search: filters.search,
-      date_from: filters.date_from,
-      date_to: filters.date_to,
-      limit: filters.limit || "10",
+      date_from: filters.date_from.trim(),
+      date_to: filters.date_to.trim(),
     });
   }
 
-  function handleResetFilters() {
-    const resetFilters = {
-      status: "",
+  function handleClearFilters() {
+    const emptyFilters = {
       search: "",
+      status: "",
       date_from: "",
       date_to: "",
-      limit: "10",
     };
 
-    setFilters(resetFilters);
-    setAppliedFilters(resetFilters);
-    setCurrentPage(1);
-    setSearchParams({}, { replace: true });
+    setFilters(emptyFilters);
+    setActiveFilters(emptyFilters);
+
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
   }
 
-  function handlePageChange(page) {
-    setCurrentPage(page);
+  function handlePageChange(nextPage) {
+    if (nextPage < 1 || nextPage > pagination.total_pages || nextPage === pagination.page) {
+      return;
+    }
+
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: nextPage,
+    }));
   }
 
-  function handleViewDetails(id) {
-    navigate(`/admin/verifications/${id}`);
+  function handleLimitChange(value) {
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+      limit: Number(value),
+    }));
   }
 
-  function toggleFilters() {
-    setFiltersVisible((currentValue) => !currentValue);
+  function handleOpenDetails(submissionId) {
+    setSelectedSubmissionId(submissionId);
+    setDetailsModalOpen(true);
   }
 
-  function getCustomerName(user) {
+  function handleCloseDetails() {
+    setDetailsModalOpen(false);
+    setSelectedSubmissionId(null);
+  }
+
+  function handleDetailsUpdated() {
+    fetchSubmissions({
+      page: pagination.page,
+      limit: pagination.limit,
+      ...activeFilters,
+    });
+  }
+
+  function getFullName(user) {
     if (!user) {
-      return "Unknown Customer";
+      return "Unknown customer";
     }
 
-    return `${user.first_name || ""} ${user.surname || ""}`.trim() || "Unknown Customer";
+    return [user.first_name, user.surname].filter(Boolean).join(" ") || "Unknown customer";
   }
 
-  function getStatusColor(status) {
-    const colors = {
-      pending: "pending",
-      approved: "approved",
-      rejected: "rejected",
-    };
-
-    return colors[status] || "default";
-  }
-
-  function getShowingText() {
-    if (!pagination.total) {
-      return "No submissions found";
+  function getStatusClass(status) {
+    if (status === "approved") {
+      return "border-accent-1 bg-accent-1/15 text-accent-2";
     }
 
-    const start = (pagination.page - 1) * pagination.limit + 1;
-    const end = Math.min(pagination.page * pagination.limit, pagination.total);
+    if (status === "rejected") {
+      return "border-accent-2 bg-accent-2/10 text-accent-2";
+    }
 
-    return `Showing ${start} - ${end} of ${pagination.total}`;
+    return "border-border bg-background text-text/70";
   }
 
-  function hasActiveFilters() {
-    return Boolean(
-      appliedFilters.status ||
-      appliedFilters.search.trim() ||
-      appliedFilters.date_from.trim() ||
-      appliedFilters.date_to.trim(),
+  function getStatusIcon(status) {
+    if (status === "approved") {
+      return "solar:check-circle-bold";
+    }
+
+    if (status === "rejected") {
+      return "solar:close-circle-bold";
+    }
+
+    return "solar:clock-circle-bold";
+  }
+
+  function formatStatus(status) {
+    if (!status) {
+      return "Pending";
+    }
+
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  function renderStatusBadge(status) {
+    return (
+      <span
+        className={[
+          "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold",
+          getStatusClass(status),
+        ].join(" ")}
+      >
+        <Icon icon={getStatusIcon(status)} className="size-4" />
+        {formatStatus(status)}
+      </span>
+    );
+  }
+
+  function renderFilters() {
+    return (
+      <form onSubmit={handleApplyFilters} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_auto] xl:items-end">
+          <TextInput
+            label="Search"
+            value={filters.search}
+            placeholder="Name, email, phone, ID, country..."
+            onChange={(event) => handleFilterChange("search", event.target.value)}
+          />
+
+          <Select
+            label="Status"
+            value={filters.status}
+            options={statusOptions}
+            placeholder="All Statuses"
+            isClearable
+            onChange={(value) => handleFilterChange("status", value)}
+          />
+
+          <TextInput
+            label="From"
+            value={filters.date_from}
+            placeholder="DD-MM-YYYY"
+            onChange={(event) => handleFilterChange("date_from", event.target.value)}
+          />
+
+          <TextInput
+            label="To"
+            value={filters.date_to}
+            placeholder="DD-MM-YYYY"
+            onChange={(event) => handleFilterChange("date_to", event.target.value)}
+          />
+
+          <div className="flex gap-2">
+            <Button type="submit" icon="solar:filter-bold" className="w-full xl:w-auto">
+              Filter
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              icon="solar:restart-bold"
+              onClick={handleClearFilters}
+              className="w-full xl:w-auto"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      </form>
     );
   }
 
   function renderCell(row, column) {
     if (column.key === "customer") {
       return (
-        <div className="min-w-0">
-          <p className="truncate font-semibold text-text">{getCustomerName(row.user)}</p>
-          <p className="mt-1 truncate text-xs text-text/55">{row.user?.id_passport_number || "No ID / Passport"}</p>
+        <button type="button" onClick={() => handleOpenDetails(row.id)} className="block max-w-56 text-left">
+          <span className="block truncate font-bold text-text">{getFullName(row.user)}</span>
+          <span className="mt-1 block truncate text-xs text-text/55">
+            {row.user?.country_of_residence || "No country available"}
+          </span>
+        </button>
+      );
+    }
+
+    if (column.key === "contact") {
+      return (
+        <div className="max-w-64">
+          <p className="truncate font-semibold text-text/75">{row.user?.email || "N/A"}</p>
+          <p className="mt-1 truncate text-xs text-text/50">{row.user?.phone || "N/A"}</p>
         </div>
       );
     }
 
-    if (column.key === "email") {
-      return row.user?.email || "N/A";
-    }
-
-    if (column.key === "phone") {
-      return row.user?.phone || "N/A";
-    }
-
-    if (column.key === "country") {
-      return row.user?.country_of_residence || "N/A";
-    }
-
     if (column.key === "submitted_at") {
-      return row.submitted_at || "N/A";
+      return <span className="font-semibold text-text/70">{row.submitted_at || "N/A"}</span>;
+    }
+
+    if (column.key === "reviewed_at") {
+      return <span className="font-semibold text-text/70">{row.reviewed_at || "N/A"}</span>;
     }
 
     if (column.key === "status") {
-      return <Badge text={row.status || "pending"} color={getStatusColor(row.status)} size="sm" />;
+      return renderStatusBadge(row.status);
     }
 
-    if (column.key === "action") {
+    if (column.key === "actions") {
       return (
-        <Button
+        <button
           type="button"
-          variant="secondary"
-          icon="solar:eye-bold"
-          onClick={() => handleViewDetails(row.id)}
-          className="px-3 py-2 text-xs"
+          onClick={() => handleOpenDetails(row.id)}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-text transition hover:border-accent-1 hover:bg-background"
         >
           View
-        </Button>
+          <Icon icon="solar:alt-arrow-right-linear" className="size-4" />
+        </button>
       );
     }
 
     return row[column.key] || "N/A";
   }
 
+  function renderPagination() {
+    const totalPages = pagination.total_pages || 1;
+    const currentPage = pagination.page || 1;
+    const total = pagination.total || 0;
+    const limit = pagination.limit || 10;
+
+    const startItem = total === 0 ? 0 : (currentPage - 1) * limit + 1;
+    const endItem = Math.min(currentPage * limit, total);
+
+    return (
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm font-medium text-text/55">
+          Showing <span className="font-bold text-text">{startItem}</span> to{" "}
+          <span className="font-bold text-text">{endItem}</span> of <span className="font-bold text-text">{total}</span>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="w-full sm:w-40">
+            <Select value={pagination.limit} options={limitOptions} placeholder="Limit" onChange={handleLimitChange} />
+          </div>
+
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        </div>
+      </div>
+    );
+  }
+
+  function renderContent() {
+    if (loading) {
+      return (
+        <div className="flex min-h-105 items-center justify-center rounded-2xl border border-border bg-card">
+          <Spinner />
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <Table
+          columns={columns}
+          data={submissions}
+          renderCell={renderCell}
+          emptyMessage="No verification submissions found."
+        />
+
+        {renderPagination()}
+      </>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-card shadow-sm">
-        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <Heading as="h2" className="text-xl">
-              Filters
-            </Heading>
+    <>
+      <div className="space-y-5">
+        {renderFilters()}
 
-            <p className="mt-1 hidden text-sm text-text/60 sm:block">
-              Search and filter customer verification submissions.
-            </p>
-          </div>
+        <div className="space-y-4">{renderContent()}</div>
+      </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            icon={filtersVisible ? "solar:eye-closed-bold" : "solar:eye-bold"}
-            onClick={toggleFilters}
-            className="shrink-0 px-4 py-2"
-          >
-            {filtersVisible ? "Hide" : "Show"}
-          </Button>
-        </div>
-
-        {filtersVisible && (
-          <form onSubmit={handleApplyFilters} className="px-5 py-4 sm:px-6">
-            <div className="grid gap-4">
-              <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
-                <TextInput
-                  label="Search customer"
-                  placeholder="Name, email, phone, passport, or country"
-                  value={filters.search}
-                  onChange={(event) => handleFilterChange("search", event.target.value)}
-                />
-
-                <Select
-                  label="Status"
-                  options={statusOptions}
-                  value={filters.status}
-                  onChange={(value) => handleFilterChange("status", value)}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <TextInput
-                  label="Date from"
-                  placeholder="DD-MM-YYYY"
-                  value={filters.date_from}
-                  onChange={(event) => handleFilterChange("date_from", event.target.value)}
-                />
-
-                <TextInput
-                  label="Date to"
-                  placeholder="DD-MM-YYYY"
-                  value={filters.date_to}
-                  onChange={(event) => handleFilterChange("date_to", event.target.value)}
-                />
-
-                <Select
-                  label="Rows per page"
-                  options={limitOptions}
-                  value={filters.limit}
-                  onChange={(value) => handleFilterChange("limit", value || "10")}
-                />
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-text/60">
-                  {hasActiveFilters() ? "Filters are currently applied." : "Showing all verification submissions."}
-                </p>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    icon="solar:restart-bold"
-                    onClick={handleResetFilters}
-                    className="w-full sm:w-auto"
-                  >
-                    Reset
-                  </Button>
-
-                  <Button type="submit" icon="solar:filter-bold" className="w-full sm:w-auto">
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </form>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-border bg-card shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div>
-            <Heading as="h2" className="text-xl">
-              Verification Submissions
-            </Heading>
-
-            <p className="mt-1 text-sm text-text/60">{getShowingText()}</p>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            icon="solar:refresh-bold"
-            onClick={fetchVerificationSubmissions}
-            className="w-full sm:w-auto"
-          >
-            Refresh
-          </Button>
-        </div>
-
-        <div className="p-5 sm:p-6">
-          {loading ? (
-            <div className="flex min-h-72 items-center justify-center rounded-2xl border border-border bg-background">
-              <Spinner message="Loading submissions..." size="lg" />
-            </div>
-          ) : (
-            <Table
-              columns={columns}
-              data={submissions}
-              renderCell={renderCell}
-              emptyMessage={
-                hasActiveFilters()
-                  ? "No verification submissions match the current filters."
-                  : "No verification submissions found."
-              }
-            />
-          )}
-        </div>
-
-        {!loading && pagination.total_pages > 1 && (
-          <div className="border-t border-border px-5 py-5 sm:px-6">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.total_pages}
-              onPageChange={handlePageChange}
-              text
-            />
-          </div>
-        )}
-      </section>
-    </div>
+      <VerificationDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={handleCloseDetails}
+        submissionId={selectedSubmissionId}
+        onUpdated={handleDetailsUpdated}
+      />
+    </>
   );
 }
 

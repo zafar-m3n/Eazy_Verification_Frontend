@@ -5,13 +5,17 @@ import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import utilities from "@/lib/utilities";
 import logo from "@/assets/logo.png";
+import favicon from "@/assets/favicon.png";
 
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
   const admin = utilities.getAdminData();
+
+  const sidebarExpanded = sidebarOpen || sidebarHovered;
 
   const navItems = [
     {
@@ -61,7 +65,8 @@ function AdminLayout() {
 
   function getNavClass({ isActive }) {
     return [
-      "group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+      "group flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200",
+      sidebarExpanded ? "gap-3 px-4" : "justify-center px-3",
       isActive ? "bg-accent-1 text-card shadow-sm" : "text-text/70 hover:bg-background hover:text-text",
     ].join(" ");
   }
@@ -78,63 +83,97 @@ function AdminLayout() {
       )}
 
       <aside
+        onMouseEnter={() => setSidebarHovered(true)}
+        onMouseLeave={() => setSidebarHovered(false)}
         className={[
-          "fixed left-0 top-0 z-50 flex h-screen w-72 flex-col border-r border-border bg-card transition-transform duration-300",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
           "lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          sidebarExpanded ? "w-72" : "w-20",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         ].join(" ")}
       >
-        <div className="flex h-20 items-center justify-between border-b border-border px-5">
-          <NavLink to="/admin/dashboard" onClick={closeSidebar} className="flex items-center">
-            <img src={logo} alt="Eazy Verification" className="h-10 w-auto object-contain" />
+        <div
+          className={[
+            "flex h-20 items-center border-b border-border transition-all duration-300",
+            sidebarExpanded ? "justify-between px-5" : "justify-center px-3",
+          ].join(" ")}
+        >
+          <NavLink to="/admin/dashboard" onClick={closeSidebar} className="flex items-center justify-center">
+            {sidebarExpanded ? (
+              <img src={logo} alt="Eazy Verification" className="h-10 w-auto object-contain" />
+            ) : (
+              <img src={favicon} alt="Eazy Verification" className="size-10 object-contain" />
+            )}
           </NavLink>
 
-          <button
-            type="button"
-            onClick={closeSidebar}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-text transition hover:border-accent-1 hover:bg-background lg:hidden"
-            aria-label="Close menu"
-          >
-            <Icon icon="mdi:close" className="size-5" />
-          </button>
+          {sidebarExpanded && (
+            <button
+              type="button"
+              onClick={closeSidebar}
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-text transition hover:border-accent-1 hover:bg-background lg:hidden"
+              aria-label="Close menu"
+            >
+              <Icon icon="mdi:close" className="size-5" />
+            </button>
+          )}
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-5">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
           {navItems.map((item) => (
             <NavLink key={item.path} to={item.path} onClick={closeSidebar} className={getNavClass}>
               <Icon icon={item.icon} className="size-5 shrink-0" />
-              <span>{item.label}</span>
+              {sidebarExpanded && <span className="truncate">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
 
-        <div className="border-t border-border p-4">
-          <div className="mb-4 rounded-2xl border border-border bg-background p-4">
-            <div className="flex items-center gap-3">
+        <div className="border-t border-border p-3">
+          <div
+            className={[
+              "mb-4 rounded-2xl border border-border bg-background transition-all duration-300",
+              sidebarExpanded ? "p-4" : "p-2",
+            ].join(" ")}
+          >
+            <div className={["flex items-center", sidebarExpanded ? "gap-3" : "justify-center"].join(" ")}>
               <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-1 text-card">
                 <Icon icon="solar:user-bold" className="size-5" />
               </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-text">{admin?.name || "Admin"}</p>
-                <p className="truncate text-xs text-text/60">{admin?.email || "Logged in"}</p>
-              </div>
+              {sidebarExpanded && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-text">{admin?.name || "Admin"}</p>
+                  <p className="truncate text-xs text-text/60">{admin?.email || "Logged in"}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            icon="solar:logout-3-bold"
-            onClick={handleLogout}
-            className="w-full"
-          >
-            Logout
-          </Button>
+          {sidebarExpanded ? (
+            <Button
+              type="button"
+              variant="secondary"
+              icon="solar:logout-3-bold"
+              onClick={handleLogout}
+              className="w-full"
+            >
+              Logout
+            </Button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex size-11 w-full items-center justify-center rounded-xl border border-border bg-card text-text transition hover:border-accent-1 hover:bg-background"
+              aria-label="Logout"
+            >
+              <Icon icon="solar:logout-3-bold" className="size-5" />
+            </button>
+          )}
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-72">
+      <div
+        className={["min-h-screen transition-all duration-300", sidebarExpanded ? "lg:pl-72" : "lg:pl-20"].join(" ")}
+      >
         <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
           <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">

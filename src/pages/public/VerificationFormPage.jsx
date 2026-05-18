@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import countryList from "react-select-country-list";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 import API from "@/services";
 import Button from "@/components/ui/Button";
@@ -269,6 +271,7 @@ function VerificationFormPage() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     certify_age: false,
@@ -377,6 +380,11 @@ function VerificationFormPage() {
     }));
 
     clearError(name);
+  }
+
+  function handleDateOfBirthChange(date) {
+    handleInputChange("date_of_birth", formatCalendarDate(date));
+    setDatePickerOpen(false);
   }
 
   function handleFinancialAnswerChange(questionKey, value) {
@@ -1130,12 +1138,15 @@ function VerificationFormPage() {
           onChange={(event) => handleInputChange("id_passport_number", event.target.value)}
         />
 
-        <TextInput
+        <CalendarDateInput
           label="Date of birth"
-          placeholder="DD-MM-YYYY"
           value={formData.date_of_birth}
+          placeholder="DD-MM-YYYY"
           error={errors.date_of_birth}
-          onChange={(event) => handleInputChange("date_of_birth", event.target.value)}
+          isOpen={datePickerOpen}
+          maxDate={getTodayDate()}
+          onToggle={() => setDatePickerOpen((currentValue) => !currentValue)}
+          onChange={handleDateOfBirthChange}
         />
       </div>
     );
@@ -1484,6 +1495,76 @@ function VerificationFormPage() {
       </form>
     </section>
   );
+}
+
+function CalendarDateInput({ label, value, placeholder = "DD-MM-YYYY", error, isOpen, maxDate, onToggle, onChange }) {
+  return (
+    <div className="relative">
+      {label && <label className="mb-1.5 block text-sm font-semibold text-text">{label}</label>}
+
+      <button
+        type="button"
+        onClick={onToggle}
+        className={[
+          "flex w-full items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5 text-left text-sm font-semibold text-text outline-none transition focus:border-accent-1 focus:ring-2 focus:ring-accent-1/20",
+          error ? "border-accent-2" : "border-border",
+        ].join(" ")}
+      >
+        <span className={value ? "text-text" : "text-text/35"}>{value || placeholder}</span>
+        <Icon icon="solar:calendar-bold" className="size-5 shrink-0 text-text/45" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full z-30 mt-2 rounded-xl border border-border bg-card p-3 shadow-xl">
+          <Calendar value={parseCalendarDate(value)} maxDate={maxDate} onChange={onChange} />
+
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="rounded-lg px-3 py-1.5 text-xs font-bold text-text/50 transition hover:bg-background hover:text-text"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="mt-2 text-xs font-semibold text-accent-2 sm:text-sm">{error}</p>}
+    </div>
+  );
+}
+
+function formatCalendarDate(date) {
+  if (!date) {
+    return "";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+}
+
+function parseCalendarDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const [day, month, year] = value.split("-").map(Number);
+
+  if (!day || !month || !year) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function getTodayDate() {
+  const today = new Date();
+
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 
 export default VerificationFormPage;

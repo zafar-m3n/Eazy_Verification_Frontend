@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 import API from "@/services";
 import VerificationDetailsModal from "@/components/VerificationDetailsModal";
@@ -45,6 +47,8 @@ const limitOptions = [
   },
 ];
 
+const minAllowedDate = new Date(2026, 0, 1);
+
 function VerificationListPage() {
   const [loading, setLoading] = useState(true);
   const [submissions, setSubmissions] = useState([]);
@@ -68,6 +72,8 @@ function VerificationListPage() {
     date_from: "",
     date_to: "",
   });
+
+  const [openDatePicker, setOpenDatePicker] = useState("");
 
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -152,8 +158,57 @@ function VerificationListPage() {
     }));
   }
 
+  function validateFilters() {
+    const fromDate = parseCalendarDate(filters.date_from);
+    const toDate = parseCalendarDate(filters.date_to);
+    const today = getTodayDate();
+
+    if (filters.date_from && !fromDate) {
+      Notification.error("Please select a valid from date.");
+      return false;
+    }
+
+    if (filters.date_to && !toDate) {
+      Notification.error("Please select a valid to date.");
+      return false;
+    }
+
+    if (fromDate && fromDate < minAllowedDate) {
+      Notification.error("From date cannot be older than 01-01-2026.");
+      return false;
+    }
+
+    if (toDate && toDate < minAllowedDate) {
+      Notification.error("To date cannot be older than 01-01-2026.");
+      return false;
+    }
+
+    if (fromDate && fromDate > today) {
+      Notification.error("From date cannot be in the future.");
+      return false;
+    }
+
+    if (toDate && toDate > today) {
+      Notification.error("To date cannot be in the future.");
+      return false;
+    }
+
+    if (fromDate && toDate && fromDate > toDate) {
+      Notification.error("From date cannot be after the to date.");
+      return false;
+    }
+
+    return true;
+  }
+
   function handleApplyFilters(event) {
     event.preventDefault();
+
+    if (!validateFilters()) {
+      return;
+    }
+
+    setOpenDatePicker("");
 
     setPagination((currentPagination) => ({
       ...currentPagination,
@@ -178,6 +233,7 @@ function VerificationListPage() {
 
     setFilters(emptyFilters);
     setActiveFilters(emptyFilters);
+    setOpenDatePicker("");
 
     setPagination((currentPagination) => ({
       ...currentPagination,
@@ -277,6 +333,8 @@ function VerificationListPage() {
   }
 
   function renderFilters() {
+    const today = getTodayDate();
+
     return (
       <form onSubmit={handleApplyFilters} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="grid gap-4 xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_auto] xl:items-end">
@@ -296,18 +354,28 @@ function VerificationListPage() {
             onChange={(value) => handleFilterChange("status", value)}
           />
 
-          <TextInput
+          <CalendarDateInput
+            name="date_from"
             label="From"
             value={filters.date_from}
             placeholder="DD-MM-YYYY"
-            onChange={(event) => handleFilterChange("date_from", event.target.value)}
+            minDate={minAllowedDate}
+            maxDate={today}
+            openDatePicker={openDatePicker}
+            setOpenDatePicker={setOpenDatePicker}
+            onChange={(value) => handleFilterChange("date_from", value)}
           />
 
-          <TextInput
+          <CalendarDateInput
+            name="date_to"
             label="To"
             value={filters.date_to}
             placeholder="DD-MM-YYYY"
-            onChange={(event) => handleFilterChange("date_to", event.target.value)}
+            minDate={minAllowedDate}
+            maxDate={today}
+            openDatePicker={openDatePicker}
+            setOpenDatePicker={setOpenDatePicker}
+            onChange={(value) => handleFilterChange("date_to", value)}
           />
 
           <div className="flex gap-2">
@@ -445,6 +513,97 @@ function VerificationListPage() {
       />
     </>
   );
+}
+
+function CalendarDateInput({
+  name,
+  label,
+  value,
+  placeholder = "DD-MM-YYYY",
+  minDate,
+  maxDate,
+  openDatePicker,
+  setOpenDatePicker,
+  onChange,
+}) {
+  const isOpen = openDatePicker === name;
+
+  function handleDateChange(date) {
+    onChange(formatCalendarDate(date));
+    setOpenDatePicker("");
+  }
+
+  function handleClear() {
+    onChange("");
+    setOpenDatePicker("");
+  }
+
+  function handleToggle() {
+    setOpenDatePicker(isOpen ? "" : name);
+  }
+
+  return (
+    <div className="relative">
+      {label && <label className="mb-1.5 block text-sm font-semibold text-text">{label}</label>}
+
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left text-sm font-semibold text-text outline-none transition placeholder:text-text/35 focus:border-accent-1 focus:ring-2 focus:ring-accent-1/20"
+      >
+        <span className={value ? "text-text" : "text-text/35"}>{value || placeholder}</span>
+        <Icon icon="solar:calendar-bold" className="size-5 shrink-0 text-text/45" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full z-30 mt-2 rounded-xl border border-border bg-card p-3 shadow-xl">
+          <Calendar value={parseCalendarDate(value)} minDate={minDate} maxDate={maxDate} onChange={handleDateChange} />
+
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg px-3 py-1.5 text-xs font-bold text-text/50 transition hover:bg-background hover:text-text"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatCalendarDate(date) {
+  if (!date) {
+    return "";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+}
+
+function parseCalendarDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const [day, month, year] = value.split("-").map(Number);
+
+  if (!day || !month || !year) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function getTodayDate() {
+  const today = new Date();
+
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 
 export default VerificationListPage;

@@ -12,6 +12,8 @@ function Modal({
   overlayClass = "",
   modalClass = "",
   bodyClass = "",
+  headerClass = "",
+  customHeader = null,
   closeButton = true,
   footer = null,
   disableEscapeClose = false,
@@ -27,6 +29,7 @@ function Modal({
     "3xl": "max-w-3xl",
     "4xl": "max-w-4xl",
     "5xl": "max-w-5xl",
+    xxl: "max-w-6xl",
     full: "max-w-[calc(100vw-2rem)]",
   };
 
@@ -40,6 +43,49 @@ function Modal({
     if (closeOnOverlayClick && !disableEscapeClose) {
       onClose();
     }
+  }
+
+  function renderDefaultHeader() {
+    if (!title && !closeButton) {
+      return null;
+    }
+
+    return (
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+        {title ? (
+          <Dialog.Title className="min-w-0 truncate text-lg font-semibold text-text">{title}</Dialog.Title>
+        ) : (
+          <div />
+        )}
+
+        {closeButton && (
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl text-text/70 transition hover:bg-background hover:text-text focus:outline-none"
+          >
+            <span className="sr-only">Close</span>
+            <Icon icon="mdi:close" className="size-5" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function renderHeader() {
+    if (customHeader) {
+      return (
+        <div className={`shrink-0 border-b border-border px-5 py-4 sm:px-6 ${headerClass}`}>
+          {typeof customHeader === "function"
+            ? customHeader({
+                close: handleClose,
+              })
+            : customHeader}
+        </div>
+      );
+    }
+
+    return renderDefaultHeader();
   }
 
   return (
@@ -81,26 +127,7 @@ function Modal({
                 modalClass,
               ].join(" ")}
             >
-              {(title || closeButton) && (
-                <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
-                  {title ? (
-                    <Dialog.Title className="min-w-0 truncate text-lg font-semibold text-text">{title}</Dialog.Title>
-                  ) : (
-                    <div />
-                  )}
-
-                  {closeButton && (
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-xl text-text/70 transition hover:bg-background hover:text-text focus:outline-none"
-                    >
-                      <span className="sr-only">Close</span>
-                      <Icon icon="mdi:close" className="size-5" />
-                    </button>
-                  )}
-                </div>
-              )}
+              {renderHeader()}
 
               <div className={`min-h-0 flex-1 overflow-y-auto px-5 py-5 text-text sm:px-6 ${bodyClass}`}>
                 {children}

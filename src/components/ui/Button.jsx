@@ -21,6 +21,12 @@ function Button({ children, variant = "primary", icon = null, iconPosition = "le
       hover:shadow-[0_0_18px_rgba(163,230,53,0.2)]
       active:scale-[0.98]
     `,
+    dark: `
+      text-white
+      bg-black 
+      hover:bg-black/90
+      active:bg-black/80
+    `,
   };
 
   return (

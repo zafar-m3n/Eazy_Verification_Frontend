@@ -7,41 +7,15 @@ import Modal from "@/components/ui/Modal";
 import Notification from "@/components/ui/Notification";
 import Spinner from "@/components/ui/Spinner";
 
-const complianceQuestionKeys = [
-  "certify_age",
-  "accept_terms_and_privacy",
-  "fatca_reportable_person",
-  "politically_exposed_person",
-];
-
-const tabs = [
-  {
-    id: "profile",
-    label: "Profile",
-  },
-  {
-    id: "answers",
-    label: "Trader Profile",
-  },
-  {
-    id: "documents",
-    label: "Documents",
-  },
-  // {
-  //   id: "notes",
-  //   label: "Notes",
-  // },
-];
+const complianceQuestionKeys = ["fatca_reportable_person", "politically_exposed_person"];
 
 function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) {
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState(null);
-  const [internalNotes, setInternalNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [actionLoading, setActionLoading] = useState("");
   const [downloadingDocumentId, setDownloadingDocumentId] = useState(null);
-  const [activeTab, setActiveTab] = useState("profile");
 
   const complianceAnswers = useMemo(
     () => getAnswersByKeys(submission?.answers || [], complianceQuestionKeys),
@@ -67,14 +41,12 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
       setSubmission(null);
       setShowRejectBox(false);
       setRejectionReason("");
-      setActiveTab("profile");
 
       const response = await API.private.getVerificationSubmissionById(submissionId);
 
       if (response?.data?.code === "OK") {
         const nextSubmission = response.data.data?.submission || null;
         setSubmission(nextSubmission);
-        setInternalNotes(nextSubmission?.internal_notes || "");
         return;
       }
 
@@ -149,32 +121,6 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     }
   }
 
-  async function handleSaveNotes() {
-    if (!submission?.id) {
-      return;
-    }
-
-    try {
-      setActionLoading("notes");
-
-      const response = await API.private.updateVerificationNotes(submission.id, internalNotes);
-
-      if (response?.data?.code === "OK") {
-        Notification.success(response.data.message || "Internal notes updated successfully.");
-        await fetchSubmissionDetails();
-        onUpdated?.();
-        return;
-      }
-
-      Notification.error("Failed to update internal notes.");
-    } catch (error) {
-      const errorMessage = error?.response?.data?.error || "Failed to update internal notes.";
-      Notification.error(errorMessage);
-    } finally {
-      setActionLoading("");
-    }
-  }
-
   async function handleDownloadDocument(document) {
     if (!submission?.id || !document?.id) {
       return;
@@ -184,6 +130,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
       setDownloadingDocumentId(document.id);
 
       const response = await API.private.downloadVerificationDocument(submission.id, document.id);
+
       const blob = new Blob([response.data], {
         type: document.mime_type || "application/octet-stream",
       });
@@ -213,10 +160,8 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     }
 
     setSubmission(null);
-    setInternalNotes("");
     setRejectionReason("");
     setShowRejectBox(false);
-    setActiveTab("profile");
     onClose?.();
   }
 
@@ -226,23 +171,34 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     return [user?.first_name, user?.surname].filter(Boolean).join(" ") || "Verification Review";
   }
 
-  function getModalTitle() {
-    const email = submission?.user?.email;
+  function getInitials() {
+    const user = submission?.user;
+    const first = user?.first_name || "";
+    const last = user?.surname || "";
 
-    if (!email) {
-      return getCustomerName();
+    if (first && last) {
+      return `${first[0]}${last[0]}`.toUpperCase();
     }
 
-    return (
-      <span className="block min-w-0">
-        <span className="block truncate text-lg font-bold leading-6 text-text">{getCustomerName()}</span>
-        <span className="mt-0.5 block truncate text-xs font-semibold text-text/45">{email}</span>
-      </span>
-    );
+    const name = getCustomerName();
+
+    if (!name || name === "Verification Review") {
+      return "VR";
+    }
+
+    return name.substring(0, 2).toUpperCase();
   }
 
   function isFinalStatus() {
     return submission?.status === "approved" || submission?.status === "rejected";
+  }
+
+  function formatStatus(status) {
+    if (!status) {
+      return "Pending";
+    }
+
+    return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
   function getStatusClass(status) {
@@ -269,34 +225,17 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     return "solar:clock-circle-bold";
   }
 
-  function formatStatus(status) {
-    if (!status) {
-      return "Pending";
-    }
-
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
   function renderStatusBadge(status) {
     return (
       <span
         className={[
-          "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold",
+          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
           getStatusClass(status),
         ].join(" ")}
       >
-        <Icon icon={getStatusIcon(status)} className="size-4" />
+        <Icon icon={getStatusIcon(status)} className="size-3.5" />
         {formatStatus(status)}
       </span>
-    );
-  }
-
-  function renderInfoRow(label, value) {
-    return (
-      <div className="grid gap-1 border-b border-border py-3 last:border-b-0 sm:grid-cols-[150px_1fr] sm:gap-5">
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/40">{label}</p>
-        <p className="wrap-break-word text-sm font-semibold leading-6 text-text">{value || "N/A"}</p>
-      </div>
     );
   }
 
@@ -337,7 +276,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     return valueMap[label] || "Not provided";
   }
 
-  function getSuitabilityProfileItems() {
+  function getTraderProfileItems() {
     return [
       {
         label: "Trading Experience",
@@ -385,16 +324,6 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
   function getComplianceItems() {
     return [
       {
-        label: "Age Certified",
-        value: getComplianceValue("certify_age"),
-        icon: "solar:user-check-bold",
-      },
-      {
-        label: "Terms Accepted",
-        value: getComplianceValue("accept_terms_and_privacy"),
-        icon: "solar:document-add-bold",
-      },
-      {
         label: "FATCA",
         value: getComplianceValue("fatca_reportable_person"),
         icon: "solar:global-bold",
@@ -430,214 +359,153 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     return financialAnswers.filter((answer) => !usedAnswers.has(answer.question_key));
   }
 
-  function renderTabs() {
+  function renderModalHeader({ close }) {
     return (
-      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-1/15 text-sm font-bold text-accent-2">
+            {getInitials()}
+          </div>
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={[
-                  "rounded-full px-4 py-2 text-sm font-bold transition",
-                  isActive ? "bg-text text-card" : "bg-transparent text-text/45 hover:bg-background hover:text-text",
-                ].join(" ")}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2 className="truncate text-lg font-bold text-text">{getCustomerName()}</h2>
+              {submission && renderStatusBadge(submission.status)}
+            </div>
+
+            <p className="mt-0.5 truncate text-xs font-semibold text-text/45">
+              {submission?.user?.email || "No email provided"}
+            </p>
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center">{renderStatusBadge(submission?.status)}</div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          {!isFinalStatus() && submission && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                icon="solar:close-circle-bold"
+                onClick={handleReject}
+                disabled={actionLoading === "reject"}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto"
+              >
+                {showRejectBox ? "Confirm Reject" : "Reject"}
+              </Button>
+
+              <Button
+                type="button"
+                variant="primary"
+                icon={actionLoading === "approve" ? "solar:refresh-bold" : "solar:check-circle-bold"}
+                onClick={handleApprove}
+                disabled={actionLoading === "approve"}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto"
+              >
+                {actionLoading === "approve" ? "Approving..." : "Approve"}
+              </Button>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={close}
+            disabled={Boolean(actionLoading || downloadingDocumentId)}
+            className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-text/70 transition hover:bg-background hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Close"
+          >
+            <Icon icon="mdi:close" className="size-4.5" />
+          </button>
+        </div>
       </div>
     );
   }
 
-  function renderActionBar() {
-    if (isFinalStatus()) {
-      return null;
-    }
-
+  function renderCardHeading(title, icon) {
     return (
-      <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          icon="solar:close-circle-bold"
-          onClick={handleReject}
-          disabled={actionLoading === "reject"}
-          className="w-full justify-center sm:w-auto"
-        >
-          {showRejectBox ? "Confirm Reject" : "Reject"}
-        </Button>
+      <div className="mb-4 flex items-center gap-2.5">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-1/10 text-accent-2">
+          <Icon icon={icon} className="size-4.5" />
+        </div>
 
-        <Button
-          type="button"
-          variant="primary"
-          icon={actionLoading === "approve" ? "solar:refresh-bold" : "solar:check-circle-bold"}
-          onClick={handleApprove}
-          disabled={actionLoading === "approve"}
-          className="w-full justify-center sm:w-auto"
-        >
-          {actionLoading === "approve" ? "Approving..." : "Approve"}
-        </Button>
+        <h3 className="text-sm font-bold text-text">{title}</h3>
       </div>
     );
   }
 
-  function renderSectionShell(children) {
-    return <section className="rounded-2xl border border-border bg-card p-5">{children}</section>;
-  }
-
-  function renderSectionTitle(title) {
+  function renderCard(children, className = "") {
     return (
-      <div className="mb-4">
-        <h3 className="text-base font-bold text-text">{title}</h3>
+      <section className={`rounded-[22px] border border-border bg-card p-4 shadow-sm ${className}`}>{children}</section>
+    );
+  }
+
+  function renderDetailRow(icon, label, value) {
+    return (
+      <div className="flex items-start gap-2.5 border-b border-border py-3 last:border-b-0">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-text/45">
+          <Icon icon={icon} className="size-4.5" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/35">{label}</p>
+          <p className="mt-0.5 wrap-break-word text-[13px] font-semibold leading-5 text-text">{value || "N/A"}</p>
+        </div>
       </div>
     );
   }
 
-  function renderProfileTab() {
+  function renderClientCard() {
     const user = submission?.user;
 
-    return renderSectionShell(
+    return renderCard(
       <>
-        {renderSectionTitle("Profile")}
+        {renderCardHeading("Client Information", "solar:user-rounded-bold")}
 
-        <div className="rounded-2xl border border-border bg-background px-4">
-          {renderInfoRow("Full Name", getCustomerName())}
-          {renderInfoRow("Email", user?.email)}
-          {renderInfoRow("Phone", user?.phone)}
-          {renderInfoRow("ID / Passport", user?.id_passport_number)}
-          {renderInfoRow("Date of Birth", user?.date_of_birth)}
-          {renderInfoRow("Country", user?.country_of_residence)}
+        <div>
+          {renderDetailRow("solar:phone-bold", "Phone", user?.phone)}
+          {renderDetailRow("solar:passport-bold", "ID / Passport", user?.id_passport_number)}
+          {renderDetailRow("solar:calendar-bold", "Date of Birth", user?.date_of_birth)}
+          {renderDetailRow("solar:global-bold", "Country", user?.country_of_residence)}
         </div>
       </>,
     );
   }
 
-  function renderComplianceSnapshot() {
-    const complianceItems = getComplianceItems();
-
-    return (
-      <section className="rounded-2xl border border-border bg-card p-5">
-        {renderSectionTitle("Compliance")}
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {complianceItems.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-border bg-background p-4">
-              <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-card text-text/45">
-                <Icon icon={item.icon} className="size-5" />
-              </div>
-
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/40">{item.label}</p>
-              <p className="mt-2 wrap-break-word text-sm font-bold leading-6 text-text">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  function renderSuitabilityProfile() {
-    const profileItems = getSuitabilityProfileItems();
-
-    return (
-      <section className="rounded-2xl border border-border bg-card p-5">
-        {renderSectionTitle("Suitability")}
-
-        <div className="grid gap-3 md:grid-cols-2">
-          {profileItems.map((item) => (
-            <div key={item.label} className="flex gap-4 rounded-2xl border border-border bg-background p-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-text/45">
-                <Icon icon={item.icon} className="size-5" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/40">{item.label}</p>
-                <p className="mt-1 wrap-break-word text-sm font-bold leading-6 text-text">{item.value}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  function renderAdditionalFinancialDetails() {
-    const additionalAnswers = getOtherFinancialAnswers();
-
-    if (!additionalAnswers.length) {
-      return null;
-    }
-
-    return (
-      <section className="rounded-2xl border border-border bg-card p-5">
-        {renderSectionTitle("Additional Details")}
-
-        <div className="divide-y divide-border rounded-2xl border border-border bg-background">
-          {additionalAnswers.map((answer) => (
-            <div key={answer.question_key} className="grid gap-2 px-4 py-3 lg:grid-cols-[1fr_0.75fr] lg:gap-6">
-              <p className="text-sm font-semibold leading-6 text-text/60">{answer.question_text}</p>
-              <p className="wrap-break-word text-sm font-bold leading-6 text-text lg:text-right">
-                {answer.display_value || "N/A"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  function renderAnswersTab() {
-    return (
-      <div className="space-y-4">
-        {renderComplianceSnapshot()}
-        {renderSuitabilityProfile()}
-        {renderAdditionalFinancialDetails()}
-      </div>
-    );
-  }
-
-  function renderDocumentsTab() {
+  function renderDocumentsCard() {
     const documents = submission?.documents || [];
 
-    return renderSectionShell(
+    return renderCard(
       <>
-        {renderSectionTitle("Documents")}
+        {renderCardHeading("Documents", "solar:documents-bold")}
 
         {!documents.length ? (
-          renderEmptyState("No documents uploaded.")
+          <div className="flex items-center gap-2.5 rounded-lg border border-dashed border-border bg-background px-3 py-3">
+            <Icon icon="solar:inbox-bold" className="size-5 shrink-0 text-text/30" />
+            <p className="text-[13px] font-semibold text-text/50">No documents uploaded.</p>
+          </div>
         ) : (
-          <div className="divide-y divide-border rounded-2xl border border-border bg-background">
+          <div className="divide-y divide-border">
             {documents.map((document) => (
-              <div
-                key={document.id}
-                className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
+              <div key={document.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="wrap-break-word text-sm font-bold text-text">
+                  <p className="truncate text-[13px] font-bold text-text">
                     {document.document_label || document.document_type || "Document"}
                   </p>
-                  <p className="mt-1 wrap-break-word text-xs text-text/45">
+                  <p className="mt-0.5 truncate text-[11px] font-semibold text-text/45">
                     {document.original_file_name || document.saved_file_name || "Uploaded file"}
                   </p>
                 </div>
 
-                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="flex shrink-0 items-center gap-1.5">
                   {document.file_url && (
                     <a
                       href={document.file_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-text transition hover:border-accent-1 hover:bg-background"
+                      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-text transition hover:border-accent-1 hover:shadow-[0_0_18px_rgba(163,230,53,0.2)]"
+                      aria-label="View document"
+                      title="View document"
                     >
-                      View
+                      <Icon icon="solar:eye-bold" className="size-4.5" />
                     </a>
                   )}
 
@@ -645,9 +513,18 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
                     type="button"
                     onClick={() => handleDownloadDocument(document)}
                     disabled={downloadingDocumentId === document.id}
-                    className="inline-flex items-center justify-center rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-text transition hover:border-accent-1 hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex size-9 items-center justify-center rounded-lg bg-black text-white transition hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="Download document"
+                    title="Download document"
                   >
-                    {downloadingDocumentId === document.id ? "Downloading" : "Download"}
+                    <Icon
+                      icon={
+                        downloadingDocumentId === document.id
+                          ? "solar:refresh-bold"
+                          : "material-symbols:download-rounded"
+                      }
+                      className="size-5"
+                    />
                   </button>
                 </div>
               </div>
@@ -658,32 +535,110 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     );
   }
 
-  function renderNotesTab() {
-    return renderSectionShell(
+  function renderLeftColumn() {
+    return (
+      <aside className="space-y-5">
+        {renderClientCard()}
+        {renderDocumentsCard()}
+      </aside>
+    );
+  }
+
+  function renderComplianceCard() {
+    const complianceItems = getComplianceItems();
+
+    return renderCard(
       <>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          {renderSectionTitle("Internal Notes")}
+        {renderCardHeading("Compliance", "solar:shield-check-bold")}
 
-          <Button
-            type="button"
-            variant="secondary"
-            icon={actionLoading === "notes" ? "solar:refresh-bold" : "solar:diskette-bold"}
-            onClick={handleSaveNotes}
-            disabled={actionLoading === "notes"}
-            className="w-full justify-center sm:w-auto"
-          >
-            {actionLoading === "notes" ? "Saving..." : "Save Notes"}
-          </Button>
+        <div className="divide-y divide-border">
+          {complianceItems.map((item) => (
+            <div key={item.label} className="grid gap-2 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[160px_1fr]">
+              <div className="flex items-center gap-2">
+                <Icon icon={item.icon} className="size-4 shrink-0 text-text/40" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/40">{item.label}</p>
+              </div>
+
+              <p className="wrap-break-word text-[13px] font-semibold leading-5 text-text sm:text-right">
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
-
-        <textarea
-          value={internalNotes}
-          onChange={(event) => setInternalNotes(event.target.value)}
-          rows={7}
-          placeholder="Add internal notes..."
-          className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 text-text outline-none transition placeholder:text-text/35 focus:border-accent-1 focus:ring-2 focus:ring-accent-1/20"
-        />
       </>,
+    );
+  }
+
+  function renderTraderProfileColumn(items) {
+    return (
+      <div className="divide-y divide-border">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-start gap-2.5 py-3 first:pt-0 last:pb-0">
+            <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-text/45">
+              <Icon icon={item.icon} className="size-4.5" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/35">{item.label}</p>
+              <p className="mt-0.5 wrap-break-word text-[13px] font-semibold leading-5 text-text/80">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderTraderProfileCard() {
+    const profileItems = getTraderProfileItems();
+    const leftItems = profileItems.slice(0, 4);
+    const rightItems = profileItems.slice(4, 8);
+
+    return renderCard(
+      <>
+        {renderCardHeading("Trader Profile", "solar:chart-2-bold")}
+
+        <div className="grid gap-5 lg:grid-cols-2 lg:gap-8">
+          {renderTraderProfileColumn(leftItems)}
+          {renderTraderProfileColumn(rightItems)}
+        </div>
+      </>,
+    );
+  }
+
+  function renderAdditionalFinancialDetailsCard() {
+    const additionalAnswers = getOtherFinancialAnswers();
+
+    if (!additionalAnswers.length) {
+      return null;
+    }
+
+    return renderCard(
+      <>
+        {renderCardHeading("Additional Information", "solar:clipboard-list-bold")}
+
+        <div className="divide-y divide-border">
+          {additionalAnswers.map((answer) => (
+            <div key={answer.question_key} className="grid gap-2 py-3 first:pt-0 last:pb-0 lg:grid-cols-[1fr_0.8fr]">
+              <p className="text-[13px] font-semibold leading-5 text-text/55">{answer.question_text}</p>
+              <p className="wrap-break-word text-[13px] font-bold leading-5 text-text lg:text-right">
+                {answer.display_value || "N/A"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </>,
+    );
+  }
+
+  function renderRightColumn() {
+    return (
+      <div className="space-y-5">
+        {renderRejectionReason()}
+        {showRejectBox && renderRejectBox()}
+        {renderComplianceCard()}
+        {renderTraderProfileCard()}
+        {renderAdditionalFinancialDetailsCard()}
+      </div>
     );
   }
 
@@ -693,15 +648,15 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     }
 
     return (
-      <div className="rounded-2xl border border-accent-2 bg-accent-2/10 p-4">
-        <p className="text-sm font-bold text-text">Reject verification</p>
+      <div className="rounded-xl border border-accent-2 bg-accent-2/10 p-3.5">
+        <p className="text-[13px] font-bold text-text">Reject verification</p>
 
         <textarea
           value={rejectionReason}
           onChange={(event) => setRejectionReason(event.target.value)}
           rows={3}
           placeholder="Rejection reason..."
-          className="mt-4 w-full resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm leading-6 text-text outline-none transition placeholder:text-text/35 focus:border-accent-1 focus:ring-2 focus:ring-accent-1/20"
+          className="mt-3 w-full resize-none rounded-xl border border-border bg-card px-3 py-2.5 text-[13px] leading-5 text-text outline-none transition placeholder:text-text/35 focus:border-accent-1 focus:ring-2 focus:ring-accent-1/20"
         />
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -712,7 +667,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
               setShowRejectBox(false);
               setRejectionReason("");
             }}
-            className="w-full sm:w-auto"
+            className="w-full px-4 py-2 text-sm sm:w-auto"
           >
             Cancel
           </Button>
@@ -723,7 +678,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
             icon={actionLoading === "reject" ? "solar:refresh-bold" : "solar:close-circle-bold"}
             onClick={handleReject}
             disabled={actionLoading === "reject"}
-            className="w-full sm:w-auto"
+            className="w-full px-4 py-2 text-sm sm:w-auto"
           >
             {actionLoading === "reject" ? "Rejecting..." : "Confirm Reject"}
           </Button>
@@ -738,46 +693,17 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     }
 
     return (
-      <div className="rounded-2xl border border-accent-2 bg-accent-2/10 p-4">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-2">Rejection Reason</p>
-        <p className="mt-2 text-sm leading-6 text-text">{submission.rejection_reason}</p>
+      <div className="rounded-xl border border-accent-2 bg-accent-2/10 p-3.5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-2">Rejection Reason</p>
+        <p className="mt-1.5 text-[13px] leading-5 text-text">{submission.rejection_reason}</p>
       </div>
     );
-  }
-
-  function renderEmptyState(message) {
-    return (
-      <div className="rounded-2xl border border-border bg-background p-6 text-center">
-        <Icon icon="solar:inbox-bold" className="mx-auto size-8 text-text/30" />
-        <p className="mt-2 text-sm font-bold text-text/50">{message}</p>
-      </div>
-    );
-  }
-
-  function renderActiveTab() {
-    if (activeTab === "profile") {
-      return renderProfileTab();
-    }
-
-    if (activeTab === "answers") {
-      return renderAnswersTab();
-    }
-
-    if (activeTab === "documents") {
-      return renderDocumentsTab();
-    }
-
-    // if (activeTab === "notes") {
-    //   return renderNotesTab();
-    // }
-
-    return renderProfileTab();
   }
 
   function renderContent() {
     if (loading) {
       return (
-        <div className="flex min-h-96 items-center justify-center">
+        <div className="flex min-h-80 items-center justify-center">
           <Spinner />
         </div>
       );
@@ -785,20 +711,17 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
 
     if (!submission) {
       return (
-        <div className="flex min-h-96 flex-col items-center justify-center rounded-2xl border border-border bg-background p-6 text-center">
-          <Icon icon="solar:document-text-bold" className="size-10 text-text/35" />
-          <p className="mt-3 text-sm font-bold text-text/60">No verification details loaded.</p>
+        <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-border bg-background p-6 text-center">
+          <Icon icon="solar:document-text-bold" className="size-9 text-text/35" />
+          <p className="mt-2 text-sm font-bold text-text/60">No verification details loaded.</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4">
-        {renderTabs()}
-        {renderActionBar()}
-        {renderRejectionReason()}
-        {showRejectBox && renderRejectBox()}
-        {renderActiveTab()}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+        {renderLeftColumn()}
+        {renderRightColumn()}
       </div>
     );
   }
@@ -807,9 +730,11 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     <Modal
       isOpen={isOpen}
       onClose={handleModalClose}
-      title={getModalTitle()}
-      size="5xl"
-      modalClass="max-h-[92dvh]"
+      size="xxl"
+      centered
+      closeButton={false}
+      customHeader={renderModalHeader}
+      modalClass="rounded-[24px]"
       bodyClass="bg-background"
       closeOnOverlayClick={!actionLoading && !downloadingDocumentId}
       disableEscapeClose={Boolean(actionLoading || downloadingDocumentId)}
@@ -837,6 +762,7 @@ function groupAnswers(answers) {
     }
 
     const question = questionMap.get(answer.question_key);
+
     const displayValue = answer.other_value
       ? `${answer.answer_label || "Other"}: ${answer.other_value}`
       : answer.answer_label || answer.answer_value || "N/A";

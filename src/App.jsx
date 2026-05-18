@@ -17,7 +17,6 @@ import VerificationSuccessPage from "@/pages/public/VerificationSuccessPage";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import VerificationListPage from "@/pages/admin/VerificationListPage";
-import VerificationDetailsPage from "@/pages/admin/VerificationDetailsPage";
 
 function AppRoutes() {
   useEffect(() => {
@@ -55,7 +54,6 @@ function AppRoutes() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="verifications" element={<VerificationListPage />} />
-          <Route path="verifications/:id" element={<VerificationDetailsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

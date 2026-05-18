@@ -23,13 +23,65 @@ const yesNoOptions = [
   { label: "No", value: "no" },
 ];
 
+const professionalQuestions = [
+  {
+    section: "professional_work_experience",
+    question_key: "current_job_title_designation",
+    question_text: "Current Job Title / Designation",
+    answer_type: "text",
+    sort_order: 12,
+    placeholder: "Enter your current job title or designation",
+  },
+  {
+    section: "professional_work_experience",
+    question_key: "industry_business_sector",
+    question_text: "Industry / Business Sector",
+    answer_type: "text",
+    sort_order: 13,
+    placeholder: "Enter your industry or business sector",
+  },
+  {
+    section: "professional_work_experience",
+    question_key: "years_of_work_experience",
+    question_text: "Years of Work Experience",
+    answer_type: "single_choice",
+    sort_order: 14,
+    options: [
+      { label: "Less than 5 years", value: "less_than_5_years" },
+      { label: "5 - 10 years", value: "5_10_years" },
+      { label: "10 - 15 years", value: "10_15_years" },
+      { label: "15 - 20 years", value: "15_20_years" },
+      { label: "20 - 25 years", value: "20_25_years" },
+      { label: "25+ years", value: "25_plus_years" },
+    ],
+  },
+  {
+    section: "professional_work_experience",
+    question_key: "own_business",
+    question_text: "Do you own a business?",
+    answer_type: "single_choice",
+    sort_order: 15,
+    options: yesNoOptions,
+    inline_business_type: true,
+  },
+];
+
+const businessTypeQuestion = {
+  section: "professional_work_experience",
+  question_key: "business_type",
+  question_text: "If yes, specify business type",
+  answer_type: "text",
+  sort_order: 16,
+  placeholder: "Enter your business type",
+};
+
 const financialQuestions = [
   {
     section: "financial_information",
     question_key: "knowledge_of_cfds",
     question_text: "Knowledge of CFDs",
     answer_type: "multiple_choice",
-    sort_order: 12,
+    sort_order: 17,
     options: [
       {
         label: "Finance related education program",
@@ -59,7 +111,7 @@ const financialQuestions = [
     question_key: "trading_frequency",
     question_text: "Trading Frequency",
     answer_type: "single_choice",
-    sort_order: 13,
+    sort_order: 18,
     options: [
       { label: "None", value: "none" },
       { label: "1-5 times per year", value: "1_5_times_per_year" },
@@ -72,7 +124,7 @@ const financialQuestions = [
     question_key: "educational_background",
     question_text: "Educational Background",
     answer_type: "single_choice",
-    sort_order: 14,
+    sort_order: 19,
     options: [
       { label: "None", value: "none" },
       { label: "High School", value: "high_school" },
@@ -86,7 +138,7 @@ const financialQuestions = [
     question_key: "trading_experience",
     question_text: "Trading Experience",
     answer_type: "multiple_choice",
-    sort_order: 15,
+    sort_order: 20,
     options: [
       { label: "None", value: "none" },
       { label: "Securities", value: "securities" },
@@ -102,7 +154,7 @@ const financialQuestions = [
     question_key: "relevant_academic_qualification",
     question_text: "Do you hold a diploma/higher level academic qualification in a relevant field?",
     answer_type: "single_choice",
-    sort_order: 16,
+    sort_order: 21,
     options: [
       {
         label: "Yes, Higher level Financial Qualification (eg. ACA, CFA or similar)",
@@ -125,7 +177,7 @@ const financialQuestions = [
     question_key: "annual_income",
     question_text: "Annual Income",
     answer_type: "single_choice",
-    sort_order: 17,
+    sort_order: 22,
     options: [
       {
         label: "Less than $10,000 or Equivalent",
@@ -142,7 +194,7 @@ const financialQuestions = [
     question_key: "financial_services_background",
     question_text: "Financial Services Background",
     answer_type: "multiple_choice",
-    sort_order: 18,
+    sort_order: 23,
     options: [
       { label: "None", value: "none" },
       { label: "Prior Education", value: "prior_education" },
@@ -159,7 +211,7 @@ const financialQuestions = [
     question_key: "income_source",
     question_text: "Income Source",
     answer_type: "single_choice",
-    sort_order: 19,
+    sort_order: 24,
     options: [
       {
         label: "Employed - Private company",
@@ -182,7 +234,7 @@ const financialQuestions = [
     question_key: "source_of_funds",
     question_text: "Source of Funds",
     answer_type: "multiple_choice",
-    sort_order: 20,
+    sort_order: 25,
     options: [
       { label: "Employment", value: "employment" },
       { label: "Business Activities", value: "business_activities" },
@@ -200,7 +252,7 @@ const financialQuestions = [
     question_key: "savings_and_investments_value",
     question_text: "Value of savings and investments",
     answer_type: "single_choice",
-    sort_order: 21,
+    sort_order: 26,
     options: [
       {
         label: "Less than $10,000 or Equivalent",
@@ -214,23 +266,18 @@ const financialQuestions = [
   },
   {
     section: "financial_information",
-    question_key: "purpose_of_trading",
-    question_text: "Purpose of Trading",
+    question_key: "active_loans_or_liabilities",
+    question_text: "Do you have active loans or liabilities?",
     answer_type: "single_choice",
-    sort_order: 22,
-    options: [
-      { label: "Hedging", value: "hedging" },
-      { label: "Personal Investment", value: "personal_investment" },
-      { label: "Speculation", value: "speculation" },
-      { label: "Other", value: "other" },
-    ],
+    sort_order: 27,
+    options: yesNoOptions,
   },
   {
     section: "financial_information",
-    question_key: "anticipated_amount_to_deposit",
-    question_text: "Anticipated Amount to Deposit",
+    question_key: "expected_amount_to_invest_annually",
+    question_text: "Expected amount to invest annually",
     answer_type: "single_choice",
-    sort_order: 23,
+    sort_order: 28,
     options: [
       { label: "Up to $10,000", value: "up_to_10000" },
       {
@@ -241,6 +288,35 @@ const financialQuestions = [
       { label: "Other", value: "other" },
     ],
   },
+  {
+    section: "financial_information",
+    question_key: "short_term_financial_goals",
+    question_text: "What are your short-term financial goals?",
+    answer_type: "text",
+    sort_order: 29,
+    placeholder: "Enter your short-term financial goals",
+  },
+  {
+    section: "financial_information",
+    question_key: "long_term_financial_goals",
+    question_text: "What are your long-term financial goals?",
+    answer_type: "text",
+    sort_order: 30,
+    placeholder: "Enter your long-term financial goals",
+  },
+  {
+    section: "financial_information",
+    question_key: "main_purpose_for_investing_trading",
+    question_text: "What is your main purpose for investing/trading?",
+    answer_type: "single_choice",
+    sort_order: 31,
+    options: [
+      { label: "Hedging", value: "hedging" },
+      { label: "Personal Investment", value: "personal_investment" },
+      { label: "Speculation", value: "speculation" },
+      { label: "Other", value: "other" },
+    ],
+  },
 ];
 
 const documentFields = [
@@ -248,19 +324,19 @@ const documentFields = [
     key: "id_front",
     label: "ID front side",
     description: "Full color copy of your passport, ID card, or driver’s license.",
-    sort_order: 24,
+    sort_order: 32,
   },
   {
     key: "id_back",
     label: "ID back side",
     description: "Back side of your passport, ID card, or driver’s license if applicable.",
-    sort_order: 25,
+    sort_order: 33,
   },
   {
     key: "proof_of_address",
     label: "Proof of Address",
     description: "Utility bill or bank statement showing your address from within the last 3 months.",
-    sort_order: 26,
+    sort_order: 34,
   },
 ];
 
@@ -287,6 +363,7 @@ function VerificationFormPage() {
     politically_exposed_person: "",
   });
 
+  const [professionalAnswers, setProfessionalAnswers] = useState({});
   const [financialAnswers, setFinancialAnswers] = useState({});
   const [otherValues, setOtherValues] = useState({});
   const [files, setFiles] = useState({
@@ -339,6 +416,13 @@ function VerificationFormPage() {
         fields: ["politically_exposed_person"],
         options: yesNoOptions,
       },
+      ...professionalQuestions.map((question) => ({
+        key: question.question_key,
+        mainStep: "Professional & Work Experience",
+        icon: "solar:case-round-linear",
+        type: "professional_question",
+        question,
+      })),
       ...financialQuestions.map((question) => ({
         key: question.question_key,
         mainStep: "Financial Information",
@@ -387,6 +471,23 @@ function VerificationFormPage() {
     setDatePickerOpen(false);
   }
 
+  function handleProfessionalAnswerChange(questionKey, value) {
+    setProfessionalAnswers((currentAnswers) => ({
+      ...currentAnswers,
+      [questionKey]: value,
+    }));
+
+    clearError(questionKey);
+
+    if (questionKey === "own_business" && value !== "yes") {
+      setProfessionalAnswers((currentAnswers) => ({
+        ...currentAnswers,
+        business_type: "",
+      }));
+      clearError("business_type");
+    }
+  }
+
   function handleFinancialAnswerChange(questionKey, value) {
     setFinancialAnswers((currentAnswers) => ({
       ...currentAnswers,
@@ -394,6 +495,15 @@ function VerificationFormPage() {
     }));
 
     clearError(questionKey);
+  }
+
+  function handleQuestionAnswerChange(section, questionKey, value) {
+    if (section === "professional_work_experience") {
+      handleProfessionalAnswerChange(questionKey, value);
+      return;
+    }
+
+    handleFinancialAnswerChange(questionKey, value);
   }
 
   function handleMultipleChoiceChange(questionKey, optionValue) {
@@ -579,12 +689,29 @@ function VerificationFormPage() {
     return nextErrors;
   }
 
-  function validateFinancialQuestion(question) {
+  function getQuestionAnswerMap(question) {
+    if (question.section === "professional_work_experience") {
+      return professionalAnswers;
+    }
+
+    return financialAnswers;
+  }
+
+  function validateQuestion(question) {
     const nextErrors = {};
-    const value = financialAnswers[question.question_key];
+    const answerMap = getQuestionAnswerMap(question);
+    const value = answerMap[question.question_key];
+
+    if (question.answer_type === "text" && !String(value || "").trim()) {
+      nextErrors[question.question_key] = "This field is required.";
+    }
 
     if (question.answer_type === "single_choice" && !value) {
       nextErrors[question.question_key] = "Please select an option.";
+    }
+
+    if (question.question_key === "own_business" && value === "yes" && !professionalAnswers.business_type?.trim()) {
+      nextErrors.business_type = "Please specify your business type.";
     }
 
     if (question.answer_type === "multiple_choice" && (!Array.isArray(value) || value.length === 0)) {
@@ -614,8 +741,8 @@ function VerificationFormPage() {
       stepErrors = validateFields(activeStep.fields);
     }
 
-    if (activeStep.type === "financial_question") {
-      stepErrors = validateFinancialQuestion(activeStep.question);
+    if (activeStep.type === "professional_question" || activeStep.type === "financial_question") {
+      stepErrors = validateQuestion(activeStep.question);
     }
 
     setErrors((currentErrors) => ({
@@ -644,16 +771,25 @@ function VerificationFormPage() {
       "proof_of_address",
     ]);
 
+    const professionalErrors = professionalQuestions.reduce(
+      (allErrors, question) => ({
+        ...allErrors,
+        ...validateQuestion(question),
+      }),
+      {},
+    );
+
     const financialErrors = financialQuestions.reduce(
       (allErrors, question) => ({
         ...allErrors,
-        ...validateFinancialQuestion(question),
+        ...validateQuestion(question),
       }),
       {},
     );
 
     return {
       ...fieldErrors,
+      ...professionalErrors,
       ...financialErrors,
     };
   }
@@ -667,8 +803,10 @@ function VerificationFormPage() {
       }
 
       if (
-        step.type === "financial_question" &&
-        (errorKeys.includes(step.question.question_key) || errorKeys.includes(`${step.question.question_key}_other`))
+        (step.type === "professional_question" || step.type === "financial_question") &&
+        (errorKeys.includes(step.question.question_key) ||
+          errorKeys.includes(`${step.question.question_key}_other`) ||
+          (step.question.question_key === "own_business" && errorKeys.includes("business_type")))
       ) {
         return true;
       }
@@ -743,6 +881,75 @@ function VerificationFormPage() {
       other_value,
       sort_order,
     };
+  }
+
+  function addQuestionAnswer(answers, question) {
+    const answerMap = getQuestionAnswerMap(question);
+    const value = answerMap[question.question_key];
+
+    if (question.answer_type === "text") {
+      const textValue = String(value || "").trim();
+
+      answers.push(
+        createAnswer({
+          section: question.section,
+          question_key: question.question_key,
+          question_text: question.question_text,
+          answer_type: question.answer_type,
+          answer_value: textValue,
+          answer_label: textValue,
+          sort_order: question.sort_order,
+        }),
+      );
+    }
+
+    if (question.answer_type === "single_choice") {
+      answers.push(
+        createAnswer({
+          section: question.section,
+          question_key: question.question_key,
+          question_text: question.question_text,
+          answer_type: question.answer_type,
+          answer_value: value,
+          answer_label: getOptionLabel(question.options, value),
+          other_value: value === "other" ? otherValues[question.question_key]?.trim() || null : null,
+          sort_order: question.sort_order,
+        }),
+      );
+
+      if (question.question_key === "own_business" && value === "yes") {
+        const businessTypeValue = professionalAnswers.business_type.trim();
+
+        answers.push(
+          createAnswer({
+            section: businessTypeQuestion.section,
+            question_key: businessTypeQuestion.question_key,
+            question_text: businessTypeQuestion.question_text,
+            answer_type: businessTypeQuestion.answer_type,
+            answer_value: businessTypeValue,
+            answer_label: businessTypeValue,
+            sort_order: businessTypeQuestion.sort_order,
+          }),
+        );
+      }
+    }
+
+    if (question.answer_type === "multiple_choice") {
+      value.forEach((selectedValue) => {
+        answers.push(
+          createAnswer({
+            section: question.section,
+            question_key: question.question_key,
+            question_text: question.question_text,
+            answer_type: question.answer_type,
+            answer_value: selectedValue,
+            answer_label: getOptionLabel(question.options, selectedValue),
+            other_value: selectedValue === "other" ? otherValues[question.question_key]?.trim() || null : null,
+            sort_order: question.sort_order,
+          }),
+        );
+      });
+    }
   }
 
   function buildAnswers() {
@@ -849,40 +1056,12 @@ function VerificationFormPage() {
       }),
     ];
 
+    professionalQuestions.forEach((question) => {
+      addQuestionAnswer(answers, question);
+    });
+
     financialQuestions.forEach((question) => {
-      const value = financialAnswers[question.question_key];
-
-      if (question.answer_type === "single_choice") {
-        answers.push(
-          createAnswer({
-            section: question.section,
-            question_key: question.question_key,
-            question_text: question.question_text,
-            answer_type: question.answer_type,
-            answer_value: value,
-            answer_label: getOptionLabel(question.options, value),
-            other_value: value === "other" ? otherValues[question.question_key]?.trim() || null : null,
-            sort_order: question.sort_order,
-          }),
-        );
-      }
-
-      if (question.answer_type === "multiple_choice") {
-        value.forEach((selectedValue) => {
-          answers.push(
-            createAnswer({
-              section: question.section,
-              question_key: question.question_key,
-              question_text: question.question_text,
-              answer_type: question.answer_type,
-              answer_value: selectedValue,
-              answer_label: getOptionLabel(question.options, selectedValue),
-              other_value: selectedValue === "other" ? otherValues[question.question_key]?.trim() || null : null,
-              sort_order: question.sort_order,
-            }),
-          );
-        });
-      }
+      addQuestionAnswer(answers, question);
     });
 
     documentFields.forEach((document) => {
@@ -1199,10 +1378,33 @@ function VerificationFormPage() {
     );
   }
 
-  function renderFinancialQuestion() {
+  function renderQuestion() {
     const question = activeStep.question;
-    const value = financialAnswers[question.question_key];
+    const answerMap = getQuestionAnswerMap(question);
+    const value = answerMap[question.question_key];
     const selectedValues = Array.isArray(value) ? value : [];
+
+    if (question.answer_type === "text") {
+      return (
+        <div>
+          <div className="mx-auto mb-5 max-w-2xl text-center sm:mb-8">
+            <Heading as="h1" className="text-xl leading-7 sm:text-2xl sm:leading-8">
+              {question.question_text}
+            </Heading>
+          </div>
+
+          <TextInput
+            label=""
+            placeholder={question.placeholder || "Enter your answer"}
+            value={value || ""}
+            error={errors[question.question_key]}
+            onChange={(event) =>
+              handleQuestionAnswerChange(question.section, question.question_key, event.target.value)
+            }
+          />
+        </div>
+      );
+    }
 
     return (
       <div>
@@ -1231,13 +1433,25 @@ function VerificationFormPage() {
                       return;
                     }
 
-                    handleFinancialAnswerChange(question.question_key, option.value);
+                    handleQuestionAnswerChange(question.section, question.question_key, option.value);
                   },
                 })}
               </div>
             );
           })}
         </div>
+
+        {question.question_key === "own_business" && value === "yes" && (
+          <div className="mt-5 rounded-xl border border-border bg-card p-3 sm:mt-6 sm:rounded-2xl sm:p-4">
+            <TextInput
+              label="Business Type"
+              placeholder="Enter your business type"
+              value={professionalAnswers.business_type || ""}
+              error={errors.business_type}
+              onChange={(event) => handleProfessionalAnswerChange("business_type", event.target.value)}
+            />
+          </div>
+        )}
 
         {((question.answer_type === "single_choice" && value === "other") ||
           (question.answer_type === "multiple_choice" && selectedValues.includes("other"))) && (
@@ -1294,6 +1508,35 @@ function VerificationFormPage() {
     );
   }
 
+  function renderReviewQuestionRows(questions) {
+    return questions.map((question) => {
+      const answerMap = getQuestionAnswerMap(question);
+      const value = answerMap[question.question_key];
+
+      if (question.answer_type === "multiple_choice") {
+        const selectedLabels = Array.isArray(value)
+          ? value.map((selectedValue) => getOptionLabel(question.options, selectedValue)).join(", ")
+          : "";
+
+        return renderReviewRow(question.question_text, selectedLabels);
+      }
+
+      if (question.answer_type === "single_choice") {
+        return (
+          <div key={question.question_key}>
+            {renderReviewRow(question.question_text, getOptionLabel(question.options, value))}
+
+            {question.question_key === "own_business" &&
+              value === "yes" &&
+              renderReviewRow(businessTypeQuestion.question_text, professionalAnswers.business_type)}
+          </div>
+        );
+      }
+
+      return renderReviewRow(question.question_text, value);
+    });
+  }
+
   function renderReview() {
     return (
       <div>
@@ -1306,16 +1549,33 @@ function VerificationFormPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-3 sm:rounded-2xl sm:p-4">
-          {renderReviewRow("Name", `${formData.first_name} ${formData.surname}`.trim())}
-          {renderReviewRow("Email", formData.email)}
-          {renderReviewRow("Phone", formData.phone)}
-          {renderReviewRow("ID / Passport", formData.id_passport_number)}
-          {renderReviewRow("Date of birth", formData.date_of_birth)}
-          {renderReviewRow("Country", getCountryLabel(formData.country_of_residence))}
-          {renderReviewRow("ID front side", files.id_front?.name)}
-          {renderReviewRow("ID back side", files.id_back?.name)}
-          {renderReviewRow("Proof of Address", files.proof_of_address?.name)}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card p-3 sm:rounded-2xl sm:p-4">
+            <p className="mb-2 text-sm font-bold text-text">Personal Details</p>
+            {renderReviewRow("Name", `${formData.first_name} ${formData.surname}`.trim())}
+            {renderReviewRow("Email", formData.email)}
+            {renderReviewRow("Phone", formData.phone)}
+            {renderReviewRow("ID / Passport", formData.id_passport_number)}
+            {renderReviewRow("Date of birth", formData.date_of_birth)}
+            {renderReviewRow("Country", getCountryLabel(formData.country_of_residence))}
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-3 sm:rounded-2xl sm:p-4">
+            <p className="mb-2 text-sm font-bold text-text">Professional & Work Experience</p>
+            {renderReviewQuestionRows(professionalQuestions)}
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-3 sm:rounded-2xl sm:p-4">
+            <p className="mb-2 text-sm font-bold text-text">Financial Information</p>
+            {renderReviewQuestionRows(financialQuestions)}
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-3 sm:rounded-2xl sm:p-4">
+            <p className="mb-2 text-sm font-bold text-text">Documents</p>
+            {renderReviewRow("ID front side", files.id_front?.name)}
+            {renderReviewRow("ID back side", files.id_back?.name)}
+            {renderReviewRow("Proof of Address", files.proof_of_address?.name)}
+          </div>
         </div>
       </div>
     );
@@ -1403,8 +1663,8 @@ function VerificationFormPage() {
       return renderPersonalChoice();
     }
 
-    if (activeStep.type === "financial_question") {
-      return renderFinancialQuestion();
+    if (activeStep.type === "professional_question" || activeStep.type === "financial_question") {
+      return renderQuestion();
     }
 
     if (activeStep.type === "documents") {

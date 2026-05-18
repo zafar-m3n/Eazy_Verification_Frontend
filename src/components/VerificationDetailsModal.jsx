@@ -9,6 +9,8 @@ import Spinner from "@/components/ui/Spinner";
 
 const complianceQuestionKeys = ["fatca_reportable_person", "politically_exposed_person"];
 
+const goalQuestionKeys = ["short_term_financial_goals", "long_term_financial_goals"];
+
 function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) {
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState(null);
@@ -19,6 +21,12 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
 
   const complianceAnswers = useMemo(
     () => getAnswersByKeys(submission?.answers || [], complianceQuestionKeys),
+    [submission],
+  );
+
+  const professionalAnswers = useMemo(
+    () =>
+      groupAnswers((submission?.answers || []).filter((answer) => answer.section === "professional_work_experience")),
     [submission],
   );
 
@@ -239,6 +247,16 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     );
   }
 
+  function findFinancialAnswerByKey(questionKey) {
+    return financialAnswers.find((answer) => answer.question_key === questionKey);
+  }
+
+  function getFinancialValueByKey(questionKey, fallback = "Not provided") {
+    const answer = findFinancialAnswerByKey(questionKey);
+
+    return answer?.display_value || fallback;
+  }
+
   function findAnswerByText(keywords) {
     const normalizedKeywords = keywords.map((keyword) => keyword.toLowerCase());
 
@@ -247,6 +265,50 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
 
       return normalizedKeywords.some((keyword) => combinedText.includes(keyword));
     });
+  }
+
+  function findProfessionalAnswerByKey(questionKey) {
+    return professionalAnswers.find((answer) => answer.question_key === questionKey);
+  }
+
+  function getProfessionalValue(questionKey, fallback = "Not provided") {
+    const answer = findProfessionalAnswerByKey(questionKey);
+
+    return answer?.display_value || fallback;
+  }
+
+  function getOptionalProfessionalValue(questionKey) {
+    const answer = findProfessionalAnswerByKey(questionKey);
+
+    return answer?.display_value || "";
+  }
+
+  function getWorkSummary() {
+    const jobTitle = getOptionalProfessionalValue("current_job_title_designation");
+    const industry = getOptionalProfessionalValue("industry_business_sector");
+    const experience = getOptionalProfessionalValue("years_of_work_experience");
+
+    if (!jobTitle && !industry && !experience) {
+      return "Professional information not provided.";
+    }
+
+    if (jobTitle && industry && experience) {
+      return `Worked as ${jobTitle} in ${industry} for ${experience}.`;
+    }
+
+    if (jobTitle && experience) {
+      return `Worked as ${jobTitle} for ${experience}.`;
+    }
+
+    if (jobTitle && industry) {
+      return `Worked as ${jobTitle} in ${industry}.`;
+    }
+
+    if (industry && experience) {
+      return `Worked in ${industry} for ${experience}.`;
+    }
+
+    return jobTitle || industry || experience;
   }
 
   function getFinancialValue(keywords, fallback = "Not provided") {
@@ -263,13 +325,13 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
 
   function getSuitabilityValue(label) {
     const valueMap = {
-      experience: getFinancialValue(["experience", "trading experience", "years"]),
-      knowledge: getFinancialValue(["knowledge", "understanding", "education"]),
-      income: getFinancialValue(["income", "annual"]),
-      worth: getFinancialValue(["net worth", "worth", "assets"]),
-      funds: getFinancialValue(["source of funds", "funds", "source"]),
-      purpose: getFinancialValue(["purpose", "objective", "goal"]),
-      employment: getFinancialValue(["employment", "occupation", "job"]),
+      experience: getFinancialValueByKey("trading_experience"),
+      knowledge: getFinancialValueByKey("knowledge_of_cfds"),
+      income: getFinancialValueByKey("annual_income"),
+      worth: getFinancialValueByKey("savings_and_investments_value"),
+      funds: getFinancialValueByKey("source_of_funds"),
+      purpose: getFinancialValueByKey("main_purpose_for_investing_trading"),
+      employment: getFinancialValueByKey("income_source"),
       risk: getFinancialValue(["risk", "risk appetite", "loss"]),
     };
 
@@ -294,7 +356,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
         icon: "solar:wallet-money-bold",
       },
       {
-        label: "Net Worth",
+        label: "Savings & Investments",
         value: getSuitabilityValue("worth"),
         icon: "solar:banknote-bold",
       },
@@ -309,7 +371,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
         icon: "solar:target-bold",
       },
       {
-        label: "Employment Status",
+        label: "Income Source",
         value: getSuitabilityValue("employment"),
         icon: "solar:case-round-bold",
       },
@@ -337,26 +399,25 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
   }
 
   function getOtherFinancialAnswers() {
-    const usedAnswers = new Set();
+    const usedAnswers = new Set([
+      "trading_experience",
+      "knowledge_of_cfds",
+      "annual_income",
+      "savings_and_investments_value",
+      "source_of_funds",
+      "main_purpose_for_investing_trading",
+      "income_source",
+    ]);
 
-    [
-      ["experience", "trading experience", "years"],
-      ["knowledge", "understanding", "education"],
-      ["income", "annual"],
-      ["net worth", "worth", "assets"],
-      ["source of funds", "funds", "source"],
-      ["purpose", "objective", "goal"],
-      ["employment", "occupation", "job"],
-      ["risk", "risk appetite", "loss"],
-    ].forEach((keywords) => {
-      const answer = findAnswerByText(keywords);
+    const normalAnswers = financialAnswers.filter(
+      (answer) => !usedAnswers.has(answer.question_key) && !goalQuestionKeys.includes(answer.question_key),
+    );
 
-      if (answer?.question_key) {
-        usedAnswers.add(answer.question_key);
-      }
-    });
+    const goalAnswers = goalQuestionKeys
+      .map((questionKey) => financialAnswers.find((answer) => answer.question_key === questionKey))
+      .filter(Boolean);
 
-    return financialAnswers.filter((answer) => !usedAnswers.has(answer.question_key));
+    return [...normalAnswers, ...goalAnswers];
   }
 
   function renderModalHeader({ close }) {
@@ -453,6 +514,44 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
     );
   }
 
+  function renderWorkSummaryBlock() {
+    const ownsBusiness = getOptionalProfessionalValue("own_business");
+    const businessType = getOptionalProfessionalValue("business_type");
+
+    return (
+      <div className="mb-4 rounded-2xl border border-border bg-background p-3">
+        <div className="flex items-start gap-2.5">
+          <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-card text-accent-2">
+            <Icon icon="solar:case-round-bold" className="size-5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/35">Work Profile</p>
+            <p className="mt-1 text-[13px] font-bold leading-5 text-text">{getWorkSummary()}</p>
+
+            {(ownsBusiness || businessType) && (
+              <div className="mt-3 grid gap-2">
+                {ownsBusiness && (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/35">Business Owner</p>
+                    <p className="text-[12px] font-bold text-text">{ownsBusiness}</p>
+                  </div>
+                )}
+
+                {businessType && (
+                  <div className="rounded-xl border border-border bg-card px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/35">Business Type</p>
+                    <p className="mt-0.5 wrap-break-word text-[12px] font-bold leading-5 text-text">{businessType}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderClientCard() {
     const user = submission?.user;
 
@@ -466,6 +565,7 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
           {renderDetailRow("solar:calendar-bold", "Date of Birth", user?.date_of_birth)}
           {renderDetailRow("solar:global-bold", "Country", user?.country_of_residence)}
         </div>
+        {renderWorkSummaryBlock()}
       </>,
     );
   }
@@ -618,9 +718,10 @@ function VerificationDetailsModal({ isOpen, onClose, submissionId, onUpdated }) 
 
         <div className="divide-y divide-border">
           {additionalAnswers.map((answer) => (
-            <div key={answer.question_key} className="grid gap-2 py-3 first:pt-0 last:pb-0 lg:grid-cols-[1fr_0.8fr]">
-              <p className="text-[13px] font-semibold leading-5 text-text/55">{answer.question_text}</p>
-              <p className="wrap-break-word text-[13px] font-bold leading-5 text-text lg:text-right">
+            <div key={answer.question_key} className="py-3 first:pt-0 last:pb-0">
+              <p className="text-left text-[13px] font-bold leading-5 text-text/70">{answer.question_text}</p>
+
+              <p className="mt-1.5 wrap-break-word text-left text-[13px] font-semibold leading-5 text-text">
                 {answer.display_value || "N/A"}
               </p>
             </div>
